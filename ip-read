@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# ip-read :: read the IP address using espeak
+#
+# 0.1 - Chris Tyler, Seneca College <chris.tyler@senecacollege.ca> 2012-07-17
+# 0.2 - Chris Tyler, Seneca College <chris.tyler@senecacollege.ca> 2013-03-26
+#
+
+#    ip-info
+#
+#    Copyright (C)2012 Chris Tyler, Seneca College, and others (see above)
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+#    MA  02110-1301  USA
+#
+
+# IP address (first IPv4 address that is not loopback)
+if [ -x /usr/sbin/ip ]
+then
+        IP=$(ip addr|sed -n "s/^[[:space:]]\+inet \([0-9.]\+\).*/\1/p"|
+                grep -v 127.0.0.1|head -1)
+elif [ -x /usr/bin/ifconfig ]
+then
+        IP=$(ifconfig|sed -n "s/.*inet [^0-9]*\([0-9.]\+\) .*/\1/p"|
+                grep -v 127.0.0.1|head -1)
+else
+        echo "$0: Cannot determine IP address - /usr/sbin/{ip,ifconfig} missing" >&2
+        exit 1
+fi
+
+if [ "$IP" = "" ]
+then
+	echo "$0: No IPv4 address found." >&2
+	exit 2
+fi
+
+# Reformatted for speaking
+IPWORDS="$(echo "$IP"|sed -e "s/\./, dot, /g" -e "s/^/IP address: /")"
+
+echo "IP address: $IP"
+echo "$IPWORDS"
+echo "$IPWORDS. Repeat, $IPWORDS"|espeak
+

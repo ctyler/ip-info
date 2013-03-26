@@ -1,0 +1,14 @@
+[Unit]
+Description=Flash IP address on LED
+After=network.target
+
+[Service]
+Environment=TERM=linux
+Type=oneshot
+ExecStart=/usr/bin/ip-flash
+StandardError=syslog
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target
+

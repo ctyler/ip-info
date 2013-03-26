@@ -1,0 +1,108 @@
+#!/bin/bash
+#
+# ip-flash :: flash the IP address on led0 (or the specified LED) of a system
+#
+# 1 - 9 short flashes indicate the digits 1 - 9
+# 10 short flashes indicate the digit 0
+# a long flash indicates an octet separator (dot)
+# a brief pause separates digits
+#
+# Arguments:
+# $1 - directory for LED control (default /sys/class/leds/led0)
+#
+# Note: This script requires trigger control of the specified LED - the kernel
+# must provide the none and default-on targets for the LED trigger, and
+# this script must be executed with appropriate privilege (root by default).
+#
+# The default LED is valid for the Raspberry Pi and some other development
+# boards.
+#
+# 0.1 - Chris Tyler, Seneca College <chris.tyler@senecacollege.ca> 2012-07-17
+# 0.2 - Chris Tyler, Seneca College <chris.tyler@senecacollege.ca> 2013-03-26
+#
+
+#    ip-info
+#
+#    Copyright (C)2012 Chris Tyler, Seneca College, and others (see above)
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
+#    MA  02110-1301  USA
+#
+
+# Control directory for the LED
+CTL=${1:-/sys/class/leds/led0}
+
+# IP address (first IPv4 address that is not loopback)
+if [ -x /usr/sbin/ip ]
+then
+        IP=$(ip addr|sed -n "s/^[[:space:]]\+inet \([0-9.]\+\).*/\1/p"|
+                grep -v 127.0.0.1|head -1)
+elif [ -x /usr/bin/ifconfig ]
+then
+        IP=$(ifconfig|sed -n "s/.*inet [^0-9]*\([0-9.]\+\) .*/\1/p"|
+                grep -v 127.0.0.1|head -1)
+else
+        echo "$0: Cannot determine IP address - /usr/sbin/{ip,ifconfig} missing" >&2
+        exit 1
+fi
+
+if [ "$IP" = "" ]
+then
+        echo "$0: No IPv4 address found." >&2
+        exit 2
+fi
+
+# Flash on designated LED
+
+if cd ${CTL} >/dev/null 2>&1
+then
+	SAVE=$(sed "s/.*\[\(.*\)\].*/\1/" trigger) # Save LED trigger state
+
+	echo none > trigger
+	sleep 3
+	 
+	for ((x=0; x<${#IP}; x++))
+	do
+		DIGIT=${IP:$x:1}
+		if [[ "$DIGIT" = "." ]]
+		then 
+			echo default-on > trigger
+			echo 255 > brightness
+			sleep 1.5
+			echo none > trigger
+			sleep 1.5
+		else
+			if [[ "$DIGIT" = 0 ]]
+			then
+				DIGIT=10
+			fi
+			for ((y=0; y<DIGIT; y++))
+			do
+				echo default-on >trigger
+				sleep 0.25
+				echo none > trigger
+				sleep 0.25
+			done
+			sleep 1.5
+		fi
+	done
+	sleep 3
+	echo $SAVE > trigger
+
+else
+	echo "$0: LED control directory $CTL does not exist." >&2
+	exit 3
+fi
+
