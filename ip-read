@@ -50,6 +50,5 @@ fi
 IPWORDS="$(echo "$IP"|sed -e "s/\./, dot, /g" -e "s/^/IP address: /")"
 
 echo "IP address: $IP"
-echo "$IPWORDS"
 echo "$IPWORDS. Repeat, $IPWORDS"|espeak
 
