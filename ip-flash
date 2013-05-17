@@ -65,41 +65,45 @@ then
 fi
 
 # Flash on designated LED
-
 if cd ${CTL} >/dev/null 2>&1
 then
 	SAVE=$(sed "s/.*\[\(.*\)\].*/\1/" trigger) # Save LED trigger state
 
-	echo none > trigger
-	sleep 3
-	 
-	for ((x=0; x<${#IP}; x++))
+	for REPEAT in 1 2
 	do
-		DIGIT=${IP:$x:1}
-		if [[ "$DIGIT" = "." ]]
-		then 
-			echo default-on > trigger
-			echo 255 > brightness
-			sleep 1.5
-			echo none > trigger
-			sleep 1.5
-		else
-			if [[ "$DIGIT" = 0 ]]
-			then
-				DIGIT=10
-			fi
-			for ((y=0; y<DIGIT; y++))
-			do
-				echo default-on >trigger
-				sleep 0.25
+
+
+		echo none > trigger
+		sleep 4
+		 
+		for ((x=0; x<${#IP}; x++))
+		do
+			DIGIT=${IP:$x:1}
+			if [[ "$DIGIT" = "." ]]
+			then 
+				echo default-on > trigger
+				echo 255 > brightness
+				sleep 1.5
 				echo none > trigger
-				sleep 0.25
-			done
-			sleep 1.5
-		fi
+				sleep 1.5
+			else
+				if [[ "$DIGIT" = 0 ]]
+				then
+					DIGIT=10
+				fi
+				for ((y=0; y<DIGIT; y++))
+				do
+					echo default-on >trigger
+					sleep 0.25
+					echo none > trigger
+					sleep 0.25
+				done
+				sleep 1.5
+			fi
+		done
+		sleep 4
+		echo $SAVE > trigger
 	done
-	sleep 3
-	echo $SAVE > trigger
 
 else
 	echo "$0: LED control directory $CTL does not exist." >&2

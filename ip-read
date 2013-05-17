@@ -49,6 +49,12 @@ fi
 # Reformatted for speaking
 IPWORDS="$(echo "$IP"|sed -e "s/\./, dot, /g" -e "s/^/IP address: /")"
 
-echo "IP address: $IP"
-echo "$IPWORDS. Repeat, $IPWORDS"|espeak
+if [ "$(id -u)" = 0 ] # Work around root pulseaudio access
+then
+	export AUDIODRIVER=alsa
+	espeak "$IPWORDS. Repeat, $IPWORDS" --stdout|play -t wav - >/dev/null 2>&1
+else
+	echo "$IPWORDS. Repeat, $IPWORDS"|espeak
+fi
+
 
